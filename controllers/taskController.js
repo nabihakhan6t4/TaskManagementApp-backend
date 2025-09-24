@@ -240,9 +240,19 @@ const updateTaskSChecklist = async (req, res) => {
       totalItems > 0 ? Math.random((completeCount / totalItems) * 100) : 0;
 
     // Auto-mark task as completed if all the items are checked
-    if(task.progress === 100){
-      
+    if (task.progress === 100) {
+      task.status = "Completed";
+    } else if (task.progress > 0) {
+      task.status = "In Progress";
+    } else {
+      task.status = "Pending";
     }
+    await task.save();
+    const updatedTask = await Task.findById(req.params.id).populate(
+      "assignedTo",
+      "name email profileImageUrl"
+    );
+    res.json({ message: "Task checkList updated", task: updatedTask });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -254,6 +264,25 @@ const updateTaskSChecklist = async (req, res) => {
 
 const getDashboardData = async (req, res) => {
   try {
+    // Fetch statistics
+    const totalTasks = await Task.countDocuments();
+    const pendingTasks = await Task.countDocuments({ status: "Pending" });
+    const completedTasks = await Task.countDocuments({ status: "Completed" });
+    const overDueTasks = await Task.countDocuments({
+      status: { $ne: "Completed" },
+      dueDate: { $lt: new Date() },
+    });
+    // Ensure all possible statuses are included
+    const taskStatuses = ["Pending", "In Progress", "Completed"];
+    const taskDistributionRaw = await Task.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+    const taskDistribution = taskStatuses
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
