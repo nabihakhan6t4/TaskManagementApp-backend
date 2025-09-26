@@ -114,24 +114,27 @@ const getUserProfile = async (req, res) => {
 
 const updateUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findById(req.user.id);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
-      user.name = req.user.name || user.name;
-      user.email = req.user.email || user.email;
-      if (req.body.password) {
-        const salt = await bcrypt.genSalt(10);
-        user.password = await bcrypt.hash(req.body.password, salt);
-        const updateUser = user.save();
-        res.json({
-          _id: updateUser._id,
-          name: updateUeer.name,
-          email: updateUser.email,
-          role: updateUser.role,
-          token: generateToken(updateUser._id),
-        });
-      }
     }
+
+    user.name = req.body.name || user.name;
+    user.email = req.body.email || user.email;
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    const updateUser = await user.save();
+    res.json({
+      _id: updateUser._id,
+      name: updateUser.name,
+      email: updateUser.email,
+      role: updateUser.role,
+      token: generateToken(updateUser._id),
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

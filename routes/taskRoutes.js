@@ -9,7 +9,7 @@ const {
   updateTask,
   deleteTask,
   updateTaskStatus,
-  updateTaskSChecklist,
+  updateTaskChecklist,
 } = require("../controllers/taskController");
 const router = express.Router();
 
@@ -22,6 +22,6 @@ router.post("/", protect, adminOnly, createTask); // Create a task (Admin nly)
 router.put("/:id", protect, updateTask); // Update task details
 router.delete("/:id", protect, adminOnly, deleteTask); // Delete a task (Admin nly)
 router.put("/:id/status", protect, updateTaskStatus); // Update task status
-router.put("/:id/todo", protect, updateTaskSChecklist); // Update task checklist
+router.put("/:id/todo", protect, updateTaskChecklist); // Update task checklist
 
 module.exports = router;

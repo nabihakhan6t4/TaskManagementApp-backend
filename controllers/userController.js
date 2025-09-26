@@ -22,7 +22,7 @@ const getUsers = async (req, res) => {
         });
         const completedTasks = await Task.countDocuments({
           assignedTo: user._id,
-          status: " Completed ",
+          status: "Completed",
         });
         return {
           ...user._doc, //Include all existing user data
