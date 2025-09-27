@@ -77,51 +77,42 @@ const exportUsersReport = async (req, res) => {
         taskCount: 0,
         pendingTasks: 0,
         inProgressTasks: 0,
+        completedTasks: 0
       };
     });
 
     userTasks.forEach((task) => {
-      if (task.assignedTo && Array.isArray(task.assignedTo)) {
+      if (task.assignedTo) {
         task.assignedTo.forEach((assignedUser) => {
-          const uid = assignedUser._id.toString();
-          if (userTaskMap[uid]) {
-            userTaskMap[uid].taskCount += 1;
+          if (userTaskMap[assignedUser._id]) {
+            userTaskMap[assignedUser._id].taskCount += 1;
+
             if (task.status === "Pending") {
-              userTaskMap[uid].pendingTasks += 1;
+              userTaskMap[assignedUser._id].pendingTasks += 1;
             } else if (task.status === "In Progress") {
-              userTaskMap[uid].inProgressTasks += 1;
+              userTaskMap[assignedUser._id].inProgressTasks += 1;
+            } else if (task.status === "Completed") {
+              userTaskMap[assignedUser._id].completedTasks += 1;
             }
           }
         });
       }
     });
 
-    // Excel workbook
     const workbook = new excelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Users Report");
+    const worksheet = workbook.addWorksheet("User Task Report");
 
     worksheet.columns = [
-      { header: "User ID", key: "_id", width: 25 },
-      { header: "Name", key: "name", width: 25 },
-      { header: "Email", key: "email", width: 35 },
-      { header: "Total Tasks", key: "taskCount", width: 15 },
+      { header: "User name", key: "name", width: 30 },
+      { header: "Email", key: "email", width: 40 },
+      { header: "Total Assigned Tasks", key: "taskCount", width: 20 },
       { header: "Pending Tasks", key: "pendingTasks", width: 20 },
-      { header: "In Progress Tasks", key: "inProgressTasks", width: 25 },
+      { header: "In Progress Tasks", key: "inProgressTasks", width: 20 },
+      { header: "Completed Tasks", key: "completedTasks", width: 20 },
     ];
 
-    Object.keys(userTaskMap).forEach((uid) => {
-      worksheet.addRow({
-        _id: uid,
-        name: userTaskMap[uid].name,
-        email: userTaskMap[uid].email,
-        taskCount: userTaskMap[uid].taskCount,
-        pendingTasks: userTaskMap[uid].pendingTasks,
-        inProgressTasks: userTaskMap[uid].inProgressTasks,
-      });
-    });
-
-    worksheet.getRow(1).eachCell((cell) => {
-      cell.font = { bold: true };
+    Object.values(userTaskMap).forEach((user) => {
+      worksheet.addRow(user);
     });
 
     res.setHeader(
@@ -133,8 +124,9 @@ const exportUsersReport = async (req, res) => {
       "attachment; filename=users_report.xlsx"
     );
 
-    await workbook.xlsx.write(res);
-    res.end();
+    return workbook.xlsx.write(res).then(() => {
+      res.end();
+    });
   } catch (error) {
     res.status(500).json({
       message: "Error exporting users",
