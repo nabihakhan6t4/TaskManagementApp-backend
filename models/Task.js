@@ -32,7 +32,7 @@ const taskSchema = new mongoose.Schema(
       enum: ["Pending", "In Progress", "Completed"],
       default: "Pending",
     },
-    dueDates: {
+    dueDate: {
       type: Date,
       required: true,
     },
@@ -45,7 +45,7 @@ const taskSchema = new mongoose.Schema(
     createdBy: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "User", 
       },
     ],
     attachments: [

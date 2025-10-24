@@ -102,7 +102,7 @@ const createTask = async (req, res) => {
       dueDate,
       assignedTo,
       attachments,
-      todoCheckList,
+      todoChecklist,
     } = req.body;
 
     if (!Array.isArray(assignedTo)) {
@@ -118,7 +118,7 @@ const createTask = async (req, res) => {
       dueDate,
       assignedTo,
       createdBy: req.user._id,
-      todoCheckList,
+      todoChecklist,
       attachments,
     });
 
@@ -142,7 +142,7 @@ const updateTask = async (req, res) => {
     task.description = req.body.description || task.description;
     task.priority = req.body.priority || task.priority;
     task.dueDate = req.body.dueDate || task.dueDate;
-    task.todoCheckList = req.body.todoCheckList || task.todoCheckList;
+    task.todoCheckList = req.body.todoChecklist || task.todoCheckList;
     task.attachments = req.body.attachments || task.attachments;
 
     if (req.body.assignedTo) {
