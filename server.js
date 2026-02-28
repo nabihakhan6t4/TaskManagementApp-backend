@@ -40,8 +40,13 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`server running on port ${PORT}`);
-  
-});
+// Server start nahi karna Vercel par, sirf local par
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
 module.exports = app;
