@@ -1,5 +1,5 @@
 const Task = require("../models/Task");
-
+const Notification = require("../models/Notification");
 // @desc Get all tasks (Admin : all, User:only assigned tasks)
 // @route GET/api/tasks
 // @access Private
@@ -15,12 +15,12 @@ const getTasks = async (req, res) => {
     if (req.user.role === "admin") {
       tasks = await Task.find(filter).populate(
         "assignedTo",
-        "name email profileImageUrl"
+        "name email profileImageUrl",
       );
     } else {
       tasks = await Task.find({ ...filter, assignedTo: req.user._id }).populate(
         "assignedTo",
-        "name email profileImageUrl"
+        "name email profileImageUrl",
       );
     }
 
@@ -28,16 +28,16 @@ const getTasks = async (req, res) => {
     tasks = await Promise.all(
       tasks.map(async (task) => {
         const completedCount = task.todoCheckList.filter(
-          (item) => item.completed
+          (item) => item.completed,
         ).length;
 
         return { ...task._doc, completedTodoCount: completedCount };
-      })
+      }),
     );
 
     // Status summary counts
     const allTasks = await Task.countDocuments(
-      req.user.role === "admin" ? {} : { assignedTo: req.user._id }
+      req.user.role === "admin" ? {} : { assignedTo: req.user._id },
     );
 
     const pendingTasks = await Task.countDocuments({
@@ -79,7 +79,7 @@ const getTaskByID = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id).populate(
       "assignedTo",
-      "name email profileImageUrl"
+      "name email profileImageUrl",
     );
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -105,22 +105,34 @@ const createTask = async (req, res) => {
       todoCheckList,
     } = req.body;
 
+    // 1. Pehle check karein ke assignedTo array hai ya nahi
     if (!Array.isArray(assignedTo)) {
       return res
         .status(400)
         .json({ message: "assignedTo must be an array of user IDs" });
     }
 
+    // 2. Task create karein (createdBy hum req.user._id se lenge jo authMiddleware se aata hai)
     const task = await Task.create({
       title,
       description,
       priority,
       dueDate,
       assignedTo,
-      createdBy: req.user._id,
+      createdBy: req.user._id, // Yahan sahi se assign hoga
       todoCheckList,
       attachments,
     });
+
+    // 3. Task banne ke baad notifications create karein
+    if (task && assignedTo.length > 0) {
+      const notifications = assignedTo.map((userId) => ({
+        recipient: userId,
+        message: `New Task Assigned: ${title}`,
+        task: task._id,
+      }));
+      await Notification.insertMany(notifications);
+    }
 
     res.status(201).json({ message: "Task created successfully", task });
   } catch (error) {
@@ -195,7 +207,7 @@ const updateTaskStatus = async (req, res) => {
     }
 
     const isAssigned = task.assignedTo.some(
-      (userId) => userId.toString() === req.user._id.toString()
+      (userId) => userId.toString() === req.user._id.toString(),
     );
     if (!isAssigned && req.user.role !== "admin") {
       return res.status(403).json({ message: "Not authorized" });
@@ -206,6 +218,21 @@ const updateTaskStatus = async (req, res) => {
         item.completed = true;
       });
       task.progress = 100;
+    }
+
+    let adminId;
+    if (Array.isArray(task.createdBy) && task.createdBy.length > 0) {
+      adminId = task.createdBy[0];
+    } else {
+      adminId = task.createdBy;
+    }
+
+    if (adminId) {
+      await Notification.create({
+        recipient: adminId,
+        message: `Task Completed: ${task.title} by ${req.user.name}`,
+        task: task._id,
+      });
     }
 
     await task.save();
@@ -233,7 +260,7 @@ const updateTaskChecklist = async (req, res) => {
 
     // Auto-updated progress based on checkList completion
     const completeCount = task.todoCheckList.filter(
-      (item) => item.completed
+      (item) => item.completed,
     ).length;
     const totalItems = task.todoCheckList.length;
     task.progress =
@@ -250,7 +277,7 @@ const updateTaskChecklist = async (req, res) => {
     await task.save();
     const updatedTask = await Task.findById(req.params.id).populate(
       "assignedTo",
-      "name email profileImageUrl"
+      "name email profileImageUrl",
     );
     res.json({ message: "Task checkList updated", task: updatedTask });
   } catch (error) {
