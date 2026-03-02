@@ -24,10 +24,15 @@ connectDB();
 
 // Middleware
 
+// Middleware
 app.use(express.json());
 
-// Routes
+// Root route (important)
+app.get("/", (req, res) => {
+  res.send("Task Manager Backend is Running 🚀");
+});
 
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/tasks", taskRoutes);
